@@ -82,3 +82,6 @@ This method runs a web server, allowing you to send images for translation via a
 
 ## Achknowledgement
 
+- **Bubble-Extraction**: [comic-text-and-bubble-detector](https://huggingface.co/ogkalu/comic-text-and-bubble-detector)
+- **Extracting text**: [MangaOcr](https://github.com/kha-white/manga-ocr)
+- **Inpainting model**: [simple-lama-inpainting](https://github.com/enesmsahin/simple-lama-inpainting)
