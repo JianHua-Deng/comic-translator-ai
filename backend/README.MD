@@ -54,7 +54,7 @@ backend/
     pip install -r requirements.txt
     ```
 
-## How to Run
+## How to Run (On Window)
 
 There are two ways to run this application: as a local script to process a folder of images, or as a web server with an API endpoint (Currently the endpoint are commented out, I haven't tested it yet).
 
@@ -79,3 +79,6 @@ This method runs a web server, allowing you to send images for translation via a
     ```
 2.  The server will be running at `http://127.0.0.1:8000`.
 3.  You can then send a `POST` request with image files to the `/translate-images/` endpoint to get back a `.zip` file containing the translated images.
+
+## Achknowledgement
+
