@@ -4,19 +4,15 @@ from app import config
 import os, glob
 print("[Pipeline Imports] Starting...")
 
-print("[Pipeline Imports] --> Importing BubbleDetector")
 from app.processing.bubble_detection import BubbleDetector
 print("[Pipeline Imports] <-- BubbleDetector Imported.")
 
-print("[Pipeline Imports] --> Importing OcrProcessor")
 from app.processing.ocr import OcrProcessor
 print("[Pipeline Imports] <-- OcrProcessor Imported.")
 
-print("[Pipeline Imports] --> Importing InPainter")
 from app.processing.inpainting import InPainter
 print("[Pipeline Imports] <-- InPainter Imported.")
 
-print("[Pipeline Imports] --> Importing TextTranslator")
 from app.processing.translation import TextTranslator
 print("[Pipeline Imports] <-- TextTranslator Imported.")
 
@@ -25,15 +21,6 @@ from app.utils.render_box import draw_text_in_box
 
 print("[Pipeline Imports] All imports successful.")
 print("[Pipeline] finished top-level imports, next: bubble_detector import (should appear next)", flush=True)
-
-"""
-from app.processing.bubble_detection import BubbleDetector
-from app.processing.ocr import OcrProcessor
-from app.processing.inpainting import InPainter
-from app.processing.translation import TextTranslator
-from app.utils.box_calculations import group_by_iou
-from app.utils.render_box import draw_text_in_box
-"""
 
 
 class MangaTranslationPipeline:
