@@ -1,0 +1,10 @@
+backend/input/*.jpg
+backend/input/*.png
+backend/input/*.jpeg
+backend/input/*.webp
+backend/output/*.jpg
+backend/output/*.png
+backend/output/*.jpeg
+backend/output/*.webp
+backend/.venv
+__pycache__
