@@ -12,19 +12,19 @@ from app.core.pipeline import MangaTranslationPipeline
 # Entry point for our backend services with FastAPI
 app = FastAPI()
 
-print("Attempting to create MangaTranslationPipeline...", flush=True)
-pipeline = None
-try:
-    pipeline = MangaTranslationPipeline()
-    print("Pipeline created successfully.", flush=True)
-except Exception as e:
-    print("Failed to create pipeline. Printing traceback:", flush=True)
-    traceback.print_exc()
-    # keep pipeline as None so server can start or so you can inspect further
+async def main():
+    try:
+        pipeline = MangaTranslationPipeline()
+        print("Pipeline created successfully.", flush=True)
+        await pipeline.translate_from_folder()
+
+    except Exception as e:
+        print("Pipeline run failed:", flush=True)
+        traceback.print_exc()
 
 if __name__ == "__main__":
-
-    asyncio.run(pipeline.translate_from_folder())
+    # Run the async main; asyncio.run will create and close the loop cleanly.
+    asyncio.run(main())
 
 
 """"

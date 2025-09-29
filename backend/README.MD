@@ -53,6 +53,11 @@ backend/
     ```bash
     pip install -r requirements.txt
     ```
+    The models are default to run in CPU, but if you want to run with GPU(CUDA) then you would need to install the package based on the [PyTorch website](https://pytorch.org/get-started/locally/)
+    ```bash
+    # Example:
+    pip install --upgrade --force-reinstall torch torchvision --index-url https://download.pytorch.org/whl/cu129
+    ```
 
 ## How to Run (On Window)
 
