@@ -21,7 +21,7 @@ class TextTranslator:
 
         try:
             results = await self.translator.translate(texts, src=original_language, dest=target_language)
-            return [result.text for result in results]
+            return [result.text.upper() for result in results]
         except Exception as e:
             print(f"An error occurred during batch translation: {e}")
             return texts # Return original text if translation failed

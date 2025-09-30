@@ -1,7 +1,7 @@
 print("[Pipeline] start import", flush=True)
 from PIL import Image, ImageDraw
 from app import config
-import os, glob
+import os, glob, math
 print("[Pipeline Imports] Starting...")
 
 from app.processing.bubble_detection import BubbleDetector
@@ -144,23 +144,67 @@ class MangaTranslationPipeline:
         return all_text_data
     
 
-    def inpaint_images(self, all_translated_data, image_list):
+    def inpaint_images(self, all_translated_data, image_list, max_dim: int = 812):
+        """
+        Rescale -> inpaint -> rescale back -> composite.
+        Put this method INSIDE the MangaTranslationPipeline class.
+        max_dim: max size of long edge during inpainting (512/768/1024)
+        """
         inpainted_images = []
+
         for image_index, image in enumerate(image_list):
             width, height = image.size
-            mask = Image.new('L', (width, height), 0) # L for grayscale
+
+            # Build binary mask 'L' with white=mask (255)
+            mask = Image.new('L', (width, height), 0)
             draw = ImageDraw.Draw(mask)
 
             if image_index in all_translated_data:
                 for bubble in all_translated_data[image_index].values():
                     coords_to_inpaint = bubble.get('text_bubble_coordinates') or bubble.get('bubble_coordinates')
                     if coords_to_inpaint:
-                        draw.rectangle(coords_to_inpaint, fill='white')
-            
-            cleaned_image = self.inpainter.inpaint(image, mask)
-            inpainted_images.append(cleaned_image)
-        
+                        # coords are expected as [x1, y1, x2, y2]
+                        draw.rectangle(coords_to_inpaint, fill=255)
+
+            # Decide whether to downscale
+            long_side = max(width, height)
+            if long_side > max_dim:
+                scale = max_dim / float(long_side)
+                new_w = max(1, int(round(width * scale)))
+                new_h = max(1, int(round(height * scale)))
+
+                img_small = image.resize((new_w, new_h), Image.LANCZOS)
+                mask_small = mask.resize((new_w, new_h), Image.NEAREST)
+            else:
+                scale = 1.0
+                img_small = image
+                mask_small = mask
+
+            # Run inpainting on smaller image
+            inpainted_small = self.inpainter.inpaint(img_small, mask_small)
+
+            # If the inpaint returns numpy array convert to PIL
+            if not isinstance(inpainted_small, Image.Image):
+                try:
+                    inpainted_small = Image.fromarray(inpainted_small)
+                except Exception:
+                    # fallback: keep original image if conversion fails
+                    inpainted_images.append(image)
+                    continue
+
+            # Upscale back if we downscaled
+            if scale != 1.0:
+                inpainted_up = inpainted_small.resize((width, height), Image.BILINEAR)
+            else:
+                inpainted_up = inpainted_small
+
+            # Composite: where mask==255 use inpainted_up, else keep original
+            final = Image.composite(inpainted_up, image, mask)
+
+            inpainted_images.append(final)
+
         return inpainted_images
+
     
 
 

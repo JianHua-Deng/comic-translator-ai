@@ -2,6 +2,13 @@ def box_area(box):
     x1, y1, x2, y2 = box
     return max(0.0, x2 - x1) * max(0.0, y2 - y1)
 
+"""
+def increase_box_height(text_box, bubble_box, factor):
+    text_x1, text_y1, text_x2, text_y2 = text_box
+    bubble_x1, bubble_y1, bubble_x2, bubble_y2 = bubble_box
+
+"""
+
 
 def shrink_box(box, shrink_factor=0.1):
     if not box:
