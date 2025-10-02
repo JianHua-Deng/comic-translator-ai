@@ -20,11 +20,8 @@ class InPainter:
         self.lama = SimpleLama(device=device)
 
     def inpaint(self, image, mask):
-        """
-        Wrap the model call with both no_grad (disable autograd)
-        and optimized_execution(False) to avoid JIT optimization overhead
-        on first calls (fixes slow-first-inference issue).
-        """
+        # Accoroding to github issue, Simple-Lama-Cleaner will have slow inference during the first few inference
+        # So we have to do torch.jit.optimized_execution(False)
         # safe fallback if optimized_execution isn't available
         try:
             opt_ctx = torch.jit.optimized_execution(False)

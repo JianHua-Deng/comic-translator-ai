@@ -1,7 +1,11 @@
 print("[Pipeline] start import", flush=True)
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 from app import config
 import os, glob, math
+
+import cv2
+import numpy as np
+
 print("[Pipeline Imports] Starting...")
 
 from app.processing.bubble_detection import BubbleDetector
@@ -25,15 +29,11 @@ print("[Pipeline] finished top-level imports, next: bubble_detector import (shou
 
 class MangaTranslationPipeline:
     def __init__(self):
-        print("Initializing MangaTranslationPipeline...")
+
         self.detector = BubbleDetector()
-        print("BubbleDetector loaded.")
         self.ocr = OcrProcessor()
-        print("OcrProcessor loaded.")
         self.translator = TextTranslator()
-        print("extTranslator loaded.")
         self.inpainter = InPainter()
-        print("InPainter loaded.")
         self.bubble_map = {0: "bubble", 1: "text_bubble", 2: "text_free"}
         print("Finished Initializing Pipeline.")
     
@@ -54,6 +54,34 @@ class MangaTranslationPipeline:
 
 
         return final_images
+    
+
+    async def translate_from_folder(self):
+        image_extensions = ('*.jpg', '*.jpeg', '*.png')
+        image_paths = []
+
+        for ext in image_extensions:
+            image_paths.extend(glob.glob(os.path.join(config.INPUT_DIR, ext)))
+
+        if not image_paths:
+            return []
+        
+        image_list = [Image.open(path).convert('RGB') for path in image_paths]
+
+        # Run the pipeline
+        final_images = await self.process_images(image_list)
+
+        # Saving the final results
+        for i, final_image in enumerate(final_images):
+            original_filename = os.path.basename(image_paths[i])
+            filename, extension = os.path.splitext(original_filename)
+
+            output_filename = f'{filename}_translated{extension}'
+            output_path = os.path.join(config.OUTPUT_DIR, output_filename)
+
+            final_image.save(output_path)
+            print(f'saved translated image to: {output_path}')
+
 
     def get_text_data_from_detections(self, all_raw_results, image_list):
         text_and_coords = {}
@@ -98,33 +126,6 @@ class MangaTranslationPipeline:
 
         return text_and_coords
     
-
-    async def translate_from_folder(self):
-        image_extensions = ('*.jpg', '*.jpeg', '*.png')
-        image_paths = []
-
-        for ext in image_extensions:
-            image_paths.extend(glob.glob(os.path.join(config.INPUT_DIR, ext)))
-
-        if not image_paths:
-            return []
-        
-        image_list = [Image.open(path).convert('RGB') for path in image_paths]
-
-        # Run the pipeline
-        final_images = await self.process_images(image_list)
-
-        # Saving the final results
-        for i, final_image in enumerate(final_images):
-            original_filename = os.path.basename(image_paths[i])
-            filename, extension = os.path.splitext(original_filename)
-
-            output_filename = f'{filename}_translated{extension}'
-            output_path = os.path.join(config.OUTPUT_DIR, output_filename)
-
-            final_image.save(output_path)
-            print(f'saved translated image to: {output_path}')
-    
     
     async def translate_all_texts(self, all_text_data):
         # Collect all text into a single list for batch translation
@@ -144,68 +145,86 @@ class MangaTranslationPipeline:
         return all_text_data
     
 
-    def inpaint_images(self, all_translated_data, image_list, max_dim: int = 812):
+    def inpaint_images(self, all_translated_data, image_list, max_dim: int = 768, pad_stride: int = 8):
         """
-        Rescale -> inpaint -> rescale back -> composite.
-        Put this method INSIDE the MangaTranslationPipeline class.
-        max_dim: max size of long edge during inpainting (512/768/1024)
+        Rescale: adding strade padding -> inpaint -> crop -> rescale. max_dim should be 768 or 1024 for best result, the higher the better the quality, but loses performance speed
+        - dilate_px: expand mask by this many pixels (helps blending).
+        - feather_radius: Gaussian blur radius for final soft mask (in pixels).
+        - pad_stride: pad small image to multiples of this stride (many LaMa variants like powers of 8).
         """
         inpainted_images = []
 
         for image_index, image in enumerate(image_list):
             width, height = image.size
 
-            # Build binary mask 'L' with white=mask (255)
+            # Build binary mask 'L' (white=mask)
             mask = Image.new('L', (width, height), 0)
             draw = ImageDraw.Draw(mask)
-
             if image_index in all_translated_data:
                 for bubble in all_translated_data[image_index].values():
                     coords_to_inpaint = bubble.get('text_bubble_coordinates') or bubble.get('bubble_coordinates')
                     if coords_to_inpaint:
-                        # coords are expected as [x1, y1, x2, y2]
                         draw.rectangle(coords_to_inpaint, fill=255)
 
-            # Decide whether to downscale
+
+            # Downscale decision
             long_side = max(width, height)
             if long_side > max_dim:
                 scale = max_dim / float(long_side)
                 new_w = max(1, int(round(width * scale)))
                 new_h = max(1, int(round(height * scale)))
-
                 img_small = image.resize((new_w, new_h), Image.LANCZOS)
+                # For inpaint we want hard mask (nearest)
                 mask_small = mask.resize((new_w, new_h), Image.NEAREST)
             else:
                 scale = 1.0
-                img_small = image
-                mask_small = mask
+                img_small = image.copy()
+                mask_small = mask.copy()
 
-            # Run inpainting on smaller image
-            inpainted_small = self.inpainter.inpaint(img_small, mask_small)
+            # Adds extra pixels (padding) so the image dimensions become multiples of the variable "stride", such so the model avoids edge artifacts
+            def pad_to_stride(pil_img, stride, fill=0):
+                w, h = pil_img.size
+                new_w = math.ceil(w / stride) * stride
+                new_h = math.ceil(h / stride) * stride
+                if new_w == w and new_h == h:
+                    return pil_img, (0, 0)
+                canvas = Image.new(pil_img.mode, (new_w, new_h), fill)
+                canvas.paste(pil_img, (0, 0))
+                return canvas, (new_w - w, new_h - h)
 
-            # If the inpaint returns numpy array convert to PIL
-            if not isinstance(inpainted_small, Image.Image):
-                try:
-                    inpainted_small = Image.fromarray(inpainted_small)
-                except Exception:
-                    # fallback: keep original image if conversion fails
-                    inpainted_images.append(image)
-                    continue
+            img_padded, pad_amount = pad_to_stride(img_small, pad_stride, fill=(128,128,128) if img_small.mode=='RGB' else 0)
+            mask_padded, _ = pad_to_stride(mask_small, pad_stride, fill=0)
 
-            # Upscale back if we downscaled
+            inpainted_padded = self.inpainter.inpaint(img_padded, mask_padded)
+
+            # Convert numpy -> PIL if needed
+            if not isinstance(inpainted_padded, Image.Image):
+                inpainted_padded = Image.fromarray(inpainted_padded)
+
+            # Remove padding if present (crop back to original small size)
+            pad_right, pad_bottom = pad_amount
+            if pad_right > 0 or pad_bottom > 0:
+                wpad, hpad = img_padded.size
+                crop_w = wpad - pad_right
+                crop_h = hpad - pad_bottom
+                inpainted_small = inpainted_padded.crop((0, 0, crop_w, crop_h))
+            else:
+                inpainted_small = inpainted_padded
+
+            # Upscale back to original size
             if scale != 1.0:
-                inpainted_up = inpainted_small.resize((width, height), Image.BILINEAR)
+                inpainted_up = inpainted_small.resize((width, height), Image.BICUBIC)
             else:
                 inpainted_up = inpainted_small
 
-            # Composite: where mask==255 use inpainted_up, else keep original
+
+            # Composite using soft mask (PIL composite uses mask values 0..255 to blend)
             final = Image.composite(inpainted_up, image, mask)
 
             inpainted_images.append(final)
 
         return inpainted_images
 
-    
 
 
     def render_text(self, all_translated_data, inpainted_images):

@@ -42,10 +42,10 @@ backend/
     It is highly recommended to use a virtual environment to manage project dependencies.
     ```bash
     # Create the virtual environment
-    python -m venv .venv
+    python -m venv venv
 
     # Activate it (on Windows)
-    .\.venv\Scripts\activate
+    .\venv\Scripts\activate
     ```
 
 2.  **Install Dependencies:**
@@ -84,6 +84,7 @@ This method runs a web server, allowing you to send images for translation via a
     ```
 2.  The server will be running at `http://127.0.0.1:8000`.
 3.  You can then send a `POST` request with image files to the `/translate-images/` endpoint to get back a `.zip` file containing the translated images.
+4.  To test out the request, for example, you can use a software named Postman, and send a post request to the `http://127.0.0.1:8000/translate-images/` endpoint with the `Body` content type of `form-data` where it has a key named `file` and `value` being the actual image you want to translate
 
 ## Achknowledgement
 
