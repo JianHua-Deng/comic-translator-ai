@@ -7,4 +7,5 @@ backend/output/*.png
 backend/output/*.jpeg
 backend/output/*.webp
 backend/.venv
+backend/venv
 __pycache__
