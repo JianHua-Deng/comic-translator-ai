@@ -25,8 +25,5 @@ This repository is a monorepo that contains both the frontend and backend servic
 To get a local copy up and running, you will need to set up both the frontend and backend services.
 
 1.  **Clone the repository:**
-    ```sh
-    git clone [https://github.com/your-username/comic-translator-ai.git](https://github.com/your-username/comic-translator-ai.git)
-    ```
 2.  **Set up the Backend:** Navigate to the `/backend` directory and follow the instructions in its `README.md` file.
 3.  **Set up the Frontend:** Navigate to the `/frontend` directory and follow the instructions in its `README.md` file.
