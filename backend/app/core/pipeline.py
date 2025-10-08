@@ -2,29 +2,19 @@ print("[Pipeline] start import", flush=True)
 from PIL import Image, ImageDraw, ImageFilter
 from app import config
 import os, glob, math
-
 import cv2
 import numpy as np
 
 print("[Pipeline Imports] Starting...")
-
 from app.processing.bubble_detection import BubbleDetector
-print("[Pipeline Imports] <-- BubbleDetector Imported.")
-
 from app.processing.ocr import OcrProcessor
-print("[Pipeline Imports] <-- OcrProcessor Imported.")
-
 from app.processing.inpainting import InPainter
-print("[Pipeline Imports] <-- InPainter Imported.")
-
 from app.processing.translation import TextTranslator
-print("[Pipeline Imports] <-- TextTranslator Imported.")
-
 from app.utils.box_calculations import group_by_iou, shrink_box
 from app.utils.render_box import draw_text_in_box
 
 print("[Pipeline Imports] All imports successful.")
-print("[Pipeline] finished top-level imports, next: bubble_detector import (should appear next)", flush=True)
+
 
 
 class MangaTranslationPipeline:
@@ -50,7 +40,7 @@ class MangaTranslationPipeline:
         # Render the final translated text onto the cleaned images
         final_images = self.render_text(all_translated_data, cleaned_images)
         
-        # self.debug_draw_boxes_raw(final_images, all_translated_data, save_prefix="debug_simple") # Debugging function, use it if there's something gouing wrong
+        self.debug_draw_boxes_raw(final_images, all_translated_data, save_prefix="debug_simple") # Debugging function, use it if there's something gouing wrong
 
 
         return final_images
@@ -108,6 +98,7 @@ class MangaTranslationPipeline:
             
                 bubble_coords = data['bubble']
                 text_bubble_coords = data.get('text_bubble', shrink_box(bubble_coords)) # Either get the text bubble coords, or if doesn't exist, use the shrink version of bubble coords
+                #text_bubble_coords = adjust_box_height(text_bubble_coords, bubble_coords) # Adjust and increase the height of the box if it is too small (For example, a single Jap word translating to english will make it appear small after rerender)
 
                 if bubble_coords and len(bubble_coords) == 4:
                     crop = image.crop(bubble_coords)
@@ -145,7 +136,7 @@ class MangaTranslationPipeline:
         return all_text_data
     
 
-    def inpaint_images(self, all_translated_data, image_list, max_dim: int = 768, pad_stride: int = 8):
+    def inpaint_images(self, all_translated_data, image_list, max_dim: int = 896, pad_stride: int = 8):
         """
         Rescale: adding strade padding -> inpaint -> crop -> rescale. max_dim should be 768 or 1024 for best result, the higher the better the quality, but loses performance speed
         - dilate_px: expand mask by this many pixels (helps blending).

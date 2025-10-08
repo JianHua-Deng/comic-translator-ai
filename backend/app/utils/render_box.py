@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
 
-def draw_text_in_box(draw, box, text, font_path, initial_font_size=20):
+def draw_text_in_box(draw, box, text, font_path, initial_font_size=30):
     x1, y1, x2, y2 = box
     font_size = initial_font_size
     font = None

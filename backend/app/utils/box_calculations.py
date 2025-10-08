@@ -2,13 +2,6 @@ def box_area(box):
     x1, y1, x2, y2 = box
     return max(0.0, x2 - x1) * max(0.0, y2 - y1)
 
-"""
-def increase_box_height(text_box, bubble_box, factor):
-    text_x1, text_y1, text_x2, text_y2 = text_box
-    bubble_x1, bubble_y1, bubble_x2, bubble_y2 = bubble_box
-
-"""
-
 
 def shrink_box(box, shrink_factor=0.1):
     if not box:
@@ -83,3 +76,39 @@ def group_by_iou(detections, iou_threshold=0.3):
             clusters[index] = cluster
             
     return clusters
+
+"""
+def adjust_box_height(orig_smaller_box, ref_of_larger_box, min_height_threshold=50, height_increase_factor=0.3):
+
+    if not orig_smaller_box:
+         return None
+    
+    if not ref_of_larger_box:
+         return orig_smaller_box
+
+    x1, y1, x2, y2 = orig_smaller_box
+    ref_x1, ref_y1, ref_x2, ref_y2 = ref_of_larger_box
+
+    height = get_box_height(orig_smaller_box)
+
+    if height <= min_height_threshold:
+        new_height = height * height_increase_factor
+        
+        # Calculate how much to add to top and bottom
+        offset_height = (new_height - height) / 2
+        
+        # Calculate new y coordinates
+        new_y1 = y1 - offset_height
+        new_y2 = y2 + offset_height
+        
+        # Ensure the new box does not go outside the reference box
+        final_y1 = max(new_y1, ref_y1)
+        final_y2 = min(new_y2, ref_y2)
+
+        return (x1, final_y1, x2, final_y2)
+    
+    return orig_smaller_box
+"""
+def get_box_height(box):
+    x1, y1, x2, y2 = box
+    return y2 - y1
