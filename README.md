@@ -14,9 +14,9 @@ This project allows users to upload multiple images of a comic page. The backend
 
 This repository is a monorepo that contains both the frontend and backend services for the application.
 
--   **/backend**: Contains the server-side code, including the OCR and translation AI pipeline. For detailed instructions on setting up the environment and running the server, please see the `README.md` file inside this folder.
+-   `/backend`: Contains the server-side code, including the OCR and translation AI pipeline. For detailed instructions on setting up the environment and running the server, please see the `README.md` file inside this folder.
 
--   **/frontend**: Contains the client-side user interface code. For instructions on installing dependencies and launching the web application, please refer to the `README.md` file inside this folder.
+-   `/frontend`: Contains the client-side user interface code. For instructions on installing dependencies and launching the web application, please refer to the `README.md` file inside this folder.
 
 ---
 
