@@ -9,3 +9,4 @@ backend/output/*.webp
 backend/.venv
 backend/venv
 __pycache__
+frontend/node_modules
