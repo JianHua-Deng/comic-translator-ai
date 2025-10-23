@@ -41,7 +41,7 @@ export default function ImageDropZone() {
   return (
     <section className="max-w-full w-4xl h-86 rounded-lg flex flex-col gap-10">
       <div {...getRootProps({
-        className: 'flex h-full justify-center items-center p-10 border-2 border-dashed border-gray-400 rounded-lg cursor-pointer bg-gray-100 dark:bg-transparent hover:bg-gray-200 hover:border-blue-400 transition-colors'
+        className: 'flex h-full justify-center items-center p-10 border-2 border-dashed border-gray-400 rounded-lg cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-gray-900 dark:hover:bg-gray-600 dark:bg-transparent hover:border-blue-400 transition-colors'
         })}>
         <input {...getInputProps()}/>
         <p className="text-gray-500">Drag some images here, or click to select files</p>

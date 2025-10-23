@@ -12,8 +12,8 @@ function App() {
       <Header/>
       <div className='h-screen flex flex-col justify-center items-center gap-10'>
         <div className='w-4xl h-36 flex flex-col justify-around'>
-          <h1>Manga Translator</h1>
-          <p className='text-gray-200'>Upload your Manga pages for translations</p>
+          <h1 className='text-5xl'>Manga Translator</h1>
+          <p className=' text-gray-400 dark:text-gray-200'>Upload your Manga pages for translations</p>
         </div>
         <ImageDropZone/>
       </div>
