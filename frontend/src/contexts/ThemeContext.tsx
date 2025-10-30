@@ -15,22 +15,21 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>(() => {
+      const storedTheme = window.localStorage.getItem('theme') as Theme | null;
+      
+      if (storedTheme) {
+        return storedTheme;
+      }
 
-  useEffect(() => {
-    const storedTheme = window.localStorage.getItem('theme') as Theme | null;
-    
-    if (storedTheme) {
-      setTheme(storedTheme);
-    } else {
       const userMedia = window.matchMedia('(prefers-color-scheme: dark)');
       if (userMedia.matches) {
-        setTheme('dark');
-      } else {
-        setTheme('light');
+        return 'dark';
       }
-    }
-  }, []);
+
+      return 'light';
+    });
+
 
   useEffect(() => {
     const root = window.document.documentElement;

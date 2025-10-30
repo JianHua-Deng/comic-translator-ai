@@ -6,7 +6,7 @@ interface ButtonProps {
 
 export default function Button({onClick, text}: ButtonProps) {
   return (
-    <button onClick={onClick} className="h-10 w-30 text- bg-emerald-300 hover:bg-emerald-200">
+    <button onClick={onClick} className="h-8 w-25 text-sm text-gray-50 bg-red-400 hover:bg-red-300">
       {text}
     </button>
   )
