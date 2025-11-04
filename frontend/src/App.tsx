@@ -1,34 +1,29 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import Header from './components/Header/Header'
+import ImageDropZone from './components/ImageDropZone/ImageDropZone'
 
 function App() {
-  const [count, setCount] = useState(0)
+
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+
+  <div className='bg-gray-100 dark:bg-gray-800 dark:text-gray-100 h-screen w-screen grid grid-cols-3 grid-rows-[1fr_6fr]'>
+      <div className='row-start-1 col-span-4'>
+        <Header/>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+
+      <div className='min-h-3/4 h-fit grid-rows-1 col-span-4 flex flex-col justify-center items-center'>
+        <div className='flex flex-col justify-center items-center gap-10'>
+          <div className='w-4xl h-36 flex flex-col gap-5 justify-around'>
+            <h1 className='text-5xl'>Manga Translator</h1>
+            <p className=' text-gray-400 dark:text-gray-300'>Upload your Manga pages for translations to English</p>
+          </div>
+          <ImageDropZone/>
+        </div>
+    </div>
+    </div>
+
   )
 }
 

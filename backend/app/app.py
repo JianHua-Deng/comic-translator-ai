@@ -1,5 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from concurrent.futures import ThreadPoolExecutor
 from typing import List
 import traceback
 from app import config
@@ -29,6 +31,11 @@ if __name__ == "__main__":
 # Entry point for our backend services with FastAPI
 app = FastAPI()
 
+origins = [
+    'http://localhost:5173'
+]
+app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["*"], allow_headers=["*"])
+
 pipeline = MangaTranslationPipeline()
 
 
@@ -52,30 +59,37 @@ async def translate_images_in_batch(files: List[UploadFile] = File(...)):
         original_filename.append(filename)
         original_file_extensions.append(extension.lstrip('.')) # Get rid of the '.' in the extension variable and store it
 
-        try:
-            processed_images = await pipeline.process_images(image_list)
-        except Exception as e:
-            print(f"Error during image processing: {e}")
-            raise HTTPException(status_code=500, detail=f"Something went wrong and inpaint process failed")
+    try:
+        """
+        future = []
+        with ThreadPoolExecutor() as executor:
+            for image in image_list:
+                future.append(executor.submit(pipeline.process_images, image))
+        """
+        processed_images = await pipeline.process_images(image_list)
+    except Exception as e:
+        print(f"Error during image processing: {e}")
+        raise HTTPException(status_code=500, detail=f"Something went wrong and inpaint process failed")
 
+    #processed_images = [res.result() for res in future]
 
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, mode='w', compression=zipfile.ZIP_DEFLATED) as zip_file:
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, mode='w', compression=zipfile.ZIP_DEFLATED) as zip_file:
 
-            # Creating a buffer for each individual image
-            for image_index, image in enumerate(processed_images):
+        # Creating a buffer for each individual image
+        for image_index, image in enumerate(processed_images):
 
-                img_buffer = io.BytesIO()
+            img_buffer = io.BytesIO()
 
-                save_format = original_file_extensions[image_index].upper()
-                if save_format == 'JPG':
-                    save_format = 'JPEG'           
+            save_format = original_file_extensions[image_index].upper()
+            if save_format == 'JPG':
+                save_format = 'JPEG'           
 
-                image.save(img_buffer, format=save_format) # This should be changed later to match the user's image extension
-                img_buffer.seek(0)
+            image.save(img_buffer, format=save_format) # This should be changed later to match the user's image extension
+            img_buffer.seek(0)
 
-                # Write the image bytes to the zip file
-                zip_file.writestr(f'translated_{original_filename[image_index]}.{original_file_extensions[image_index]}', img_buffer.read())
+            # Write the image bytes to the zip file
+            zip_file.writestr(f'translated_{original_filename[image_index]}.{original_file_extensions[image_index]}', img_buffer.read())
 
 
 
