@@ -2,21 +2,19 @@ import { useCallback, useEffect, useState } from "react";
 import Dropzone, { useDropzone, type FileWithPath } from "react-dropzone";
 import PreviewImage from "../../ui/PreviewImage";
 import Button from "../../ui/Button";
-
-
-interface ImageItem {
-  objectURL: string;
-  file: FileWithPath;
-}
+import { type ImageItem } from "../../types/types";
+import { uploadImages } from "../../utils/processImageCall";
 
 export default function ImageDropZone() {
 
   const [images, setImages] = useState<ImageItem[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const onDrop = useCallback( (acceptedFiles: FileWithPath[]) => {
     const newImages = acceptedFiles.map((imageFile) => ({
       objectURL: URL.createObjectURL(imageFile),
-      file: imageFile
+      file: imageFile,
+      fileName: imageFile.name,
     }));
 
     setImages(prevImages => [...prevImages, ...newImages]);
@@ -65,7 +63,18 @@ export default function ImageDropZone() {
 
       {images.length !== 0 && 
       <div className="flex justify-end">
-        <Button text={'Submit'} onClick={() => {}}/>
+        <Button text={'Submit'} onClick={async () => {
+            try {
+              setIsProcessing(true);
+              await uploadImages(images);
+            } catch (error) {
+              console.error('Error uploading images:', error);
+              throw error;
+            } finally {
+              setIsProcessing(false);
+            }
+          }
+        }/>
       </div>}  
     </section>
   );
