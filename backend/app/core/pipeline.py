@@ -27,22 +27,28 @@ class MangaTranslationPipeline:
         self.bubble_map = {0: "bubble", 1: "text_bubble", 2: "text_free"}
         print("Finished Initializing Pipeline.")
     
-    async def process_images(self, image_list):
-        
+    # This runs detection and OCR
+    def detect_and_extract_text(self, image_list):
+        """
+        Runs the CPU-bound detection and OCR steps.
+        This is a synchronous, blocking function.
+        """
         # Detect all the text bubbles and corresponding coordinates from the images
         all_raw_results = self.detector.detect(image_list)
         # Structure, group and get the original text from the images
         all_text_and_coord_data = self.get_text_data_from_detections(all_raw_results, image_list)
-        # Translated all the text from all the images in one batch
-        all_translated_data = await self.translate_all_texts(all_text_and_coord_data)
+
+        return all_text_and_coord_data
+    
+    # This runs inpainting and rendering
+    def inpaint_and_render(self, all_translated_data, image_list):
+
         # Inpaint the original text area
         cleaned_images = self.inpaint_images(all_translated_data, image_list)
         # Render the final translated text onto the cleaned images
         final_images = self.render_text(all_translated_data, cleaned_images)
         
-        self.debug_draw_boxes_raw(final_images, all_translated_data, save_prefix="debug_simple") # Debugging function, use it if there's something gouing wrong
-
-
+        self.debug_draw_boxes_raw(final_images, all_translated_data, save_prefix="debug_simple")
         return final_images
     
 

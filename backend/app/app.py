@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Pool
 from typing import List
 import traceback
 from app import config
@@ -58,20 +59,36 @@ async def translate_images_in_batch(files: List[UploadFile] = File(...)):
         image_list.append(image)
         original_filename.append(filename)
         original_file_extensions.append(extension.lstrip('.')) # Get rid of the '.' in the extension variable and store it
+    
+    loop = asyncio.get_running_loop()
 
     try:
-        """
-        future = []
-        with ThreadPoolExecutor() as executor:
-            for image in image_list:
-                future.append(executor.submit(pipeline.process_images, image))
-        """
-        processed_images = await pipeline.process_images(image_list)
+        
+        all_text_and_coord_data = await loop.run_in_executor(
+            None, 
+            pipeline.detect_and_extract_text, # The sync function to run
+            image_list                          # The arguments to pass
+        )
+        
+        # Run I/O-bound translation in the main async loop ===
+        # We are back in the async endpoint, so we can await normally
+        all_translated_data = await pipeline.translate_all_texts(
+            all_text_and_coord_data
+        )
+
+        # Run CPU-bound inpainting/render in an executor thread ===
+        processed_images = await loop.run_in_executor(
+            None,
+            pipeline.inpaint_and_render, # The *other* sync function
+            all_translated_data,
+            image_list
+        )
+        #processed_images = await pipeline.process_images(image_list)
+
     except Exception as e:
         print(f"Error during image processing: {e}")
         raise HTTPException(status_code=500, detail=f"Something went wrong and inpaint process failed")
 
-    #processed_images = [res.result() for res in future]
 
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, mode='w', compression=zipfile.ZIP_DEFLATED) as zip_file:
