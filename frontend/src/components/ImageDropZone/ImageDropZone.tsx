@@ -36,7 +36,7 @@ export default function ImageDropZone() {
   
 
   return (
-    <section className="max-w-full max-h-full w-4xl rounded-lg flex flex-col gap-10">
+    <section className="w-full max-w-4xl max-h-full rounded-lg flex flex-col gap-10">
       <div {...getRootProps({
         className: 'flex min-h-86 max-h-full justify-center items-center p-10 border-2 border-dashed border-gray-400 rounded-lg cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-gray-900 dark:hover:bg-gray-600 dark:bg-transparent hover:border-blue-400 transition-colors'
         })}>
