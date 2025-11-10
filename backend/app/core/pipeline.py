@@ -1,11 +1,9 @@
-print("[Pipeline] start import", flush=True)
 from PIL import Image, ImageDraw, ImageFilter
 from app import config
 import os, glob, math
 import cv2
 import numpy as np
 
-print("[Pipeline Imports] Starting...")
 from app.processing.bubble_detection import BubbleDetector
 from app.processing.ocr import OcrProcessor
 from app.processing.inpainting import InPainter
@@ -61,11 +59,14 @@ class MangaTranslationPipeline:
 
         if not image_paths:
             return []
-        
+
         image_list = [Image.open(path).convert('RGB') for path in image_paths]
 
-        # Run the pipeline
-        final_images = await self.process_images(image_list)
+        all_text_data = self.detect_and_extract_text(image_list)
+
+        all_translated_data = await self.translate_all_texts(all_text_data)
+
+        final_images = self.inpaint_and_render(all_translated_data, image_list)
 
         # Saving the final results
         for i, final_image in enumerate(final_images):
@@ -120,6 +121,7 @@ class MangaTranslationPipeline:
                 }
 
             text_and_coords[image_index] = image_text_data
+            print(text_and_coords)
 
         return text_and_coords
     
@@ -232,6 +234,9 @@ class MangaTranslationPipeline:
             if image_index in all_translated_data:
                 for bubble in all_translated_data[image_index].values():
                     if bubble['text_bubble_coordinates']:
+                        translated_text = bubble.get('translated_text', "")
+
+                        bubble['translated_text'] = translated_text
                         draw_text_in_box(draw, bubble['text_bubble_coordinates'], bubble['translated_text'], config.FONT_PATH)
             
             final_images.append(image)

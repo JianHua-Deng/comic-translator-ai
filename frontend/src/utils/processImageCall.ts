@@ -1,11 +1,13 @@
-import { useState } from "react";
+
 import { type ImageItem } from "../types/types";
 
 export async function uploadImages(images: ImageItem[]) {
   try {
     const formData = new FormData();
     images.forEach((image, index) => {
-      formData.append('files', image.file);
+      if (image.file){
+        formData.append('files', image.file);
+      }
     });
 
     const response = await fetch('http://127.0.0.1:8000/translate-images/', {
@@ -16,6 +18,8 @@ export async function uploadImages(images: ImageItem[]) {
     if (!response.ok) {
       throw new Error("Upload failed, response was not ok");
     }
+
+    return response.json();
 
   } catch (error) {
     console.error('Error uploading images:', error);

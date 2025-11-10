@@ -1,6 +1,7 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Pool
 from typing import List
@@ -37,15 +38,17 @@ origins = [
 ]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["*"], allow_headers=["*"])
 
+app.mount("/translated", StaticFiles(directory="output"), name="static")
+
 pipeline = MangaTranslationPipeline()
 
 
 @app.post("/translate-images/")
-async def translate_images_in_batch(files: List[UploadFile] = File(...)):
+async def translate_images_in_batch(request: Request, files: List[UploadFile] = File(...)):
 
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
-
+    print("Recieved Image")
     image_list = []
     original_filename = []
     original_file_extensions = []
@@ -66,29 +69,54 @@ async def translate_images_in_batch(files: List[UploadFile] = File(...)):
         
         all_text_and_coord_data = await loop.run_in_executor(
             None, 
-            pipeline.detect_and_extract_text, # The sync function to run
-            image_list                          # The arguments to pass
+            pipeline.detect_and_extract_text, 
+            image_list                         
         )
         
-        # Run I/O-bound translation in the main async loop ===
-        # We are back in the async endpoint, so we can await normally
         all_translated_data = await pipeline.translate_all_texts(
             all_text_and_coord_data
         )
 
-        # Run CPU-bound inpainting/render in an executor thread ===
         processed_images = await loop.run_in_executor(
             None,
-            pipeline.inpaint_and_render, # The *other* sync function
+            pipeline.inpaint_and_render, 
             all_translated_data,
             image_list
         )
+
         #processed_images = await pipeline.process_images(image_list)
 
     except Exception as e:
         print(f"Error during image processing: {e}")
         raise HTTPException(status_code=500, detail=f"Something went wrong and inpaint process failed")
+    
+    translated_file_names = save_images(processed_images, original_filename, original_file_extensions)
+    
+    json_res = {}
+    for index, name in enumerate(translated_file_names):
+        json_res[f'image_{index}'] ={
+            'imageUrl': f'{request.base_url}translated/{name}',
+            'name': name,
+        }
+    
+    print(json_res)
 
+    return JSONResponse(content=json_res, status_code=201, media_type='application/json')
+
+
+
+def save_images(processed_images, original_filename, original_file_extensions):
+    translated_file_names = []
+    for img, orig_name, orig_ext in zip(processed_images, original_filename, original_file_extensions):
+        final_file_name = f'{orig_name}_translated.{orig_ext}'
+        output_path = os.path.join(config.OUTPUT_DIR, final_file_name)
+        
+        img.save(output_path)
+
+        translated_file_names.append(final_file_name)
+    return translated_file_names
+
+def create_zip(processed_images, original_filename, original_file_extensions):
 
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, mode='w', compression=zipfile.ZIP_DEFLATED) as zip_file:
@@ -113,6 +141,10 @@ async def translate_images_in_batch(files: List[UploadFile] = File(...)):
         # Go back to the beginning of the Zip buffer stream before sending
         zip_buffer.seek(0)
 
+    return zip_buffer
+
+    """
     # Returning the ZIP file as a streaming response
     headers = {"Content-Disposition": "attachment; filename=translated_images.zip"}
     return StreamingResponse(zip_buffer, media_type="application/zip", headers=headers)
+    """
