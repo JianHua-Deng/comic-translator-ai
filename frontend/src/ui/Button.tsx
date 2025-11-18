@@ -21,19 +21,19 @@ export default function Button({
   className = "",
   icon,
 }: ButtonProps) {
-  const base = "inline-flex items-center justify-center rounded transition focus:outline-none";
+  const base = "inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm";
   const sizes: Record<string, string> = {
-    sm: "px-3 py-1.5 text-sm h-8",
-    md: "px-4 py-2 text-sm h-9",
+    sm: "px-4 py-2 text-sm h-9",
+    md: "px-6 py-2.5 text-base h-11",
   };
   const variants: Record<string, string> = {
-    primary: "bg-red-400 text-white hover:bg-red-300",
-    secondary: "bg-gray-100 text-gray-800 hover:bg-gray-200 border",
-    ghost: "bg-transparent text-gray-800 hover:bg-gray-100",
+    primary: "bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600 hover:shadow-lg hover:scale-105 focus:ring-red-500",
+    secondary: "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 focus:ring-gray-500",
+    ghost: "bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:ring-gray-500",
   };
 
   const classes = `${base} ${sizes[size]} ${variants[variant]} ${
-    disabled || loading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+    disabled || loading ? "opacity-60 cursor-not-allowed hover:scale-100 hover:shadow-sm" : "cursor-pointer"
   } ${className}`;
 
   return (
@@ -48,7 +48,7 @@ export default function Button({
       {loading ? (
         <span className="mr-2 -ml-1 flex items-center">
           <svg
-            className="animate-spin h-4 w-4 text-white"
+            className="animate-spin h-5 w-5 text-white"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
