@@ -16,14 +16,14 @@ print("[Pipeline Imports] All imports successful.")
 
 
 class MangaTranslationPipeline:
-    def __init__(self):
+    def __init__(self, translator_option='gemini'):
 
         self.detector = BubbleDetector()
         self.ocr = OcrProcessor()
-        self.translator = TextTranslator()
+        self.translator = TextTranslator(translator_option)
         self.inpainter = InPainter()
         self.bubble_map = {0: "bubble", 1: "text_bubble", 2: "text_free"}
-        print("Finished Initializing Pipeline.")
+        print(f"Finished Initializing Pipeline with translator: {translator_option}")
     
     # This runs detection and OCR
     def detect_and_extract_text(self, image_list):

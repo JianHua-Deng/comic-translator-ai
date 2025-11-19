@@ -59,6 +59,23 @@ backend/
     pip install --upgrade --force-reinstall torch torchvision --index-url https://download.pytorch.org/whl/cu129
     ```
 
+3.  **Set Up Gemini API Key (Recommended):**
+    The application now uses Google Gemini AI for better translation quality. To enable it:
+
+    a. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+    b. Create a `.env` file in the `backend` directory:
+    ```bash
+    cp .env.example .env
+    ```
+
+    c. Edit the `.env` file and add your API key:
+    ```
+    GEMINI_API_KEY=your_actual_api_key_here
+    ```
+
+    **Note**: If no API key is provided, the system will automatically fall back to Google Translate.
+
 ## How to Run (On Window)
 
 There are two ways to run this application: as a local script to process a folder of images, or as a web server with an API endpoint (Currently the endpoint are commented out, I haven't tested it yet).
