@@ -1,7 +1,8 @@
-import { useCallback, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useState, type Dispatch, type SetStateAction } from "react";
 import { useDropzone, type FileWithPath } from "react-dropzone";
 import PreviewImage from "../../ui/PreviewImage";
 import Button from "../../ui/Button";
+import TranslatorSelector from "../../ui/TranslatorSelector";
 import { type ImageItem } from "../../types/types";
 import { uploadImages } from "../../utils/processImageCall";
 
@@ -22,6 +23,7 @@ export default function ImageDropZone({
   setProcessedImagesUrl,
   setIsProcessing,
 }: ImageDropZoneProp) {
+  const [selectedTranslator, setSelectedTranslator] = useState<string>('gemini');
   const onDrop = useCallback(
     (acceptedFiles: FileWithPath[]) => {
       const newImages = acceptedFiles.map((imageFile) => ({
@@ -193,27 +195,34 @@ export default function ImageDropZone({
         )}
 
         {images.length !== 0 && (
-          <div className="flex justify-end">
-            <Button
-              text={"Submit"}
-              onClick={async () => {
-                try {
-                  setIsProcessing(true);
-                  const resp = await uploadImages(images);
-                  const imageList = Object.values(resp).map((item: any) => ({
-                    objectURL: item.imageUrl,
-                    fileName: item.name,
-                  }));
-                  setProcessedImagesUrl(imageList);
-                } catch (error) {
-                  console.error("Error uploading images:", error);
-                } finally {
-                  setIsProcessing(false);
-                }
-              }}
-              loading={isProcessing}
-              disabled={isProcessing}
+          <div className="flex flex-col gap-4">
+            <TranslatorSelector
+              value={selectedTranslator}
+              onChange={setSelectedTranslator}
             />
+
+            <div className="flex justify-end">
+              <Button
+                text={"Translate Images"}
+                onClick={async () => {
+                  try {
+                    setIsProcessing(true);
+                    const resp = await uploadImages(images, selectedTranslator);
+                    const imageList = Object.values(resp).map((item: any) => ({
+                      objectURL: item.imageUrl,
+                      fileName: item.name,
+                    }));
+                    setProcessedImagesUrl(imageList);
+                  } catch (error) {
+                    console.error("Error uploading images:", error);
+                  } finally {
+                    setIsProcessing(false);
+                  }
+                }}
+                loading={isProcessing}
+                disabled={isProcessing}
+              />
+            </div>
           </div>
         )}
       </div>

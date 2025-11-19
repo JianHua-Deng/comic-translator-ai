@@ -1,10 +1,10 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Pool
-from typing import List
+from typing import List, Optional
 import traceback
 from app import config
 from PIL import Image
@@ -36,43 +36,53 @@ app = FastAPI()
 origins = [
     'http://localhost:5173'
 ]
-app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 app.mount("/translated", StaticFiles(directory="output"), name="static")
 
-pipeline = MangaTranslationPipeline()
-
 
 @app.post("/translate-images/")
-async def translate_images_in_batch(request: Request, files: List[UploadFile] = File(...)):
-
+async def translate_images_in_batch(
+    request: Request,
+    files: List[UploadFile] = File(...),
+    translator: Optional[str] = Form("gemini")
+):
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
-    print("Recieved Image")
+
+    print(f"Received {len(files)} image(s) with translator: {translator}")
+
+    # Create pipeline with selected translator
+    pipeline = MangaTranslationPipeline(translator_option=translator)
+
     image_list = []
     original_filename = []
     original_file_extensions = []
 
     for file in files:
-
         contents = await file.read()
         image = Image.open(io.BytesIO(contents)).convert("RGB")
 
         filename, extension = os.path.splitext(file.filename)
         image_list.append(image)
         original_filename.append(filename)
-        original_file_extensions.append(extension.lstrip('.')) # Get rid of the '.' in the extension variable and store it
-    
+        original_file_extensions.append(extension.lstrip('.'))
+
     loop = asyncio.get_running_loop()
 
     try:
-        
         all_text_and_coord_data = await loop.run_in_executor(
-            None, 
-            pipeline.detect_and_extract_text, 
-            image_list                         
+            None,
+            pipeline.detect_and_extract_text,
+            image_list
         )
-        
+
         all_translated_data = await pipeline.translate_all_texts(
             all_text_and_coord_data
         )
