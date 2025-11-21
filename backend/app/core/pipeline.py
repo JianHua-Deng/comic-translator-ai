@@ -23,7 +23,6 @@ class MangaTranslationPipeline:
         self.translator = TextTranslator(translator_option)
         self.inpainter = InPainter()
         self.bubble_map = {0: "bubble", 1: "text_bubble", 2: "text_free"}
-        print(f"Finished Initializing Pipeline with translator: {translator_option}")
     
     # This runs detection and OCR
     def detect_and_extract_text(self, image_list):

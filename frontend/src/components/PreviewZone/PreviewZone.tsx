@@ -18,11 +18,6 @@ export default function PreviewZone({ imageUrls, clearFunction }: PreviewZonePro
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-3 rounded-xl shadow-md">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Translation Complete!</h3>
               <div className="flex items-center gap-2 mt-1">
@@ -74,7 +69,7 @@ export default function PreviewZone({ imageUrls, clearFunction }: PreviewZonePro
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="max-h-[65vh] overflow-y-auto overflow-x-hidden pr-2">
+          <div className="max-h-[65vh] p-5 overflow-y-auto overflow-x-hidden pr-2">
             <div className="grid gap-5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 auto-rows-fr">
               {imageUrls.map((image, idx) => (
                 <button
@@ -95,7 +90,7 @@ export default function PreviewZone({ imageUrls, clearFunction }: PreviewZonePro
                     <div className="text-xs font-medium text-white truncate">{image.fileName ?? `Image ${idx + 1}`}</div>
                   </div>
 
-                  <div className="absolute top-2 left-2 bg-gradient-to-br from-red-500 to-pink-500 text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow-lg">
+                  <div className="absolute top-2 left-2 bg-red-400 dark:bg-red-500/80 text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow-lg">
                     #{idx + 1}
                   </div>
 

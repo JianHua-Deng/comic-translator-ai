@@ -17,7 +17,7 @@ const switchTheme = () => {
 
 
   return (
-    <header className="w-full h-20 bg-gradient-to-r from-red-500 via-red-400 to-pink-400 dark:from-red-600 dark:via-red-500 dark:to-pink-500 shadow-lg">
+    <header className="w-full h-20 bg-red-400 dark:bg-red-500/80">
       <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-white dark:bg-gray-900 rounded-lg p-2 shadow-md">
@@ -27,7 +27,6 @@ const switchTheme = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">Manga Translator</h1>
-            <p className="text-xs text-white/80">AI-Powered Translation</p>
           </div>
         </div>
 

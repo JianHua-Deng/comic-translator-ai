@@ -1,5 +1,4 @@
 from googletrans import Translator as GoogleTranslator
-import translators as ts
 import asyncio
 import os
 from dotenv import load_dotenv
@@ -29,40 +28,12 @@ class TextTranslator:
                 self.model = genai.GenerativeModel("models/gemini-2.0-flash")
                 print("Using Gemini: gemini-2.0-flash")
 
-        elif translator_option == 'google':
+        else:
+            self.translator_option = 'google'
             self.translator = GoogleTranslator()
             print("Using Google Translate")
-        else:
-            self.translator = ts
-            print("Using Translators library")
 
-    async def translate(self, text, original_language: str ='ja', target_language: str ='en') -> str:
-        try:
-            if self.translate_engine == 'gemini':
-                prompt = f"""Translate the following Japanese manga text to English.
 
-Rules:
-- Translate naturally, preserving the tone and emotion
-- Keep it concise for speech bubbles
-- Preserve sound effects in a natural English equivalent
-- Return ONLY the translated text, no explanations
-
-Text to translate: {text}"""
-
-                response = await asyncio.to_thread(
-                    self.model.generate_content,
-                    prompt
-                )
-                translation = response.text.strip()
-                return translation
-            else:
-                result = await self.translator.translate(text, src=original_language, dest=target_language)
-                return result.text
-        except Exception as e:
-            print(f"An error occurred during translation: {e}")
-            return text # Return original text if translation failed
-        
-    
     async def translate_batch(self, texts: list, original_language: str = 'ja', target_language: str='en') -> list:
 
         if not texts:
@@ -76,11 +47,12 @@ Text to translate: {text}"""
                 translations = []
                 for i, text in enumerate(texts):
                     try:
-                        prompt = f"""Translate this Japanese manga text to English. Keep it concise for speech bubbles.
+                        prompt = f"""
+                        Translate this Japanese manga text to English. Keep it concise for speech bubbles. Be sure to clean up the punctuations so that it displays correctly with different ATF font files in English 
 
-Japanese text: {text}
+                        Japanese text: {text}
 
-Return ONLY the English translation in UPPERCASE, nothing else."""
+                        Return ONLY the English translation in UPPERCASE, nothing else."""
 
                         response = await asyncio.to_thread(
                             self.model.generate_content,
@@ -89,7 +61,7 @@ Return ONLY the English translation in UPPERCASE, nothing else."""
 
                         translation = response.text.strip().replace('**', '').replace('*', '').upper()
                         translations.append(translation)
-                        print(f"[Gemini] {i+1}/{len(texts)}: '{text[:30]}...' -> '{translation[:30]}...'", flush=True)
+                        print(f"[Gemini] {i+1}/{len(texts)}: '{text}' -> '{translation}'", flush=True)
 
                     except Exception as e:
                         print(f"[Gemini] Error translating text {i+1}: {e}", flush=True)
@@ -97,15 +69,40 @@ Return ONLY the English translation in UPPERCASE, nothing else."""
 
                 return translations
 
-            elif self.translate_engine == 'google':
+            else:
                 results = await self.translator.translate(texts, src=original_language, dest=target_language)
                 return [result.text.upper() for result in results]
-            else:
-                tasks = [asyncio.to_thread(self.translator.translate_text, t, from_language=original_language, to_language=target_language, translator='google') for t in texts]
-                results = await asyncio.gather(*tasks)
-                print(results)
-                return [getattr(r, 'text', str(r)).upper() for r in results]
 
         except Exception as e:
             print(f"An error occurred during batch translation: {e}")
             return texts # Return original text if translation failed
+        
+    '''
+    async def translate(self, text, original_language: str ='ja', target_language: str ='en') -> str:
+        try:
+            if self.translate_engine == 'gemini':
+                prompt = f"""
+                Translate the following Japanese manga text to English.
+
+                Rules:
+                - Translate naturally, preserving the tone and emotion
+                - Keep it concise for speech bubbles
+                - Preserve sound effects in a natural English equivalent
+                - Return ONLY the translated text, no explanations
+
+                Text to translate: {text} """
+
+                response = await asyncio.to_thread(
+                    self.model.generate_content,
+                    prompt
+                )
+                translation = response.text.strip()
+                return translation
+            else:
+                result = await self.translator.translate(text, src=original_language, dest=target_language)
+                print(result)
+                return result.text
+        except Exception as e:
+            print(f"An error occurred during translation: {e}")
+            return text # Return original text if translation failed
+    '''

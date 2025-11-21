@@ -99,9 +99,6 @@ export default function ImageDropZone({
               </div>
             </div>
 
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse" style={{width: '70%'}} />
-            </div>
           </div>
         </div>
       )}
@@ -116,8 +113,8 @@ export default function ImageDropZone({
           <input {...getInputProps()} />
           <div className="flex flex-col items-center gap-4 text-center">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-pink-500 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
-              <div className="relative bg-gradient-to-br from-red-500 to-pink-500 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <div className="absolute inset-0 bg-red-400 dark:bg-red-500/80 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
+              <div className="relative bg-red-400 dark:bg-red-500/80 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
@@ -148,7 +145,7 @@ export default function ImageDropZone({
           <aside className="max-h-96 overflow-y-auto bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex items-center justify-between mb-3 p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
               <h4 className="text-base font-semibold flex items-center gap-2">
-                <span className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-2.5 py-0.5 rounded-full text-sm">
+                <span className="bg-red-400 dark:bg-red-500/80 text-white px-2.5 py-0.5 rounded-full text-sm">
                   {images.length}
                 </span>
                 Uploaded Images
@@ -162,7 +159,7 @@ export default function ImageDropZone({
               </button>
             </div>
 
-            <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {images.map((image, idx) => (
                 <div key={image.objectURL ?? idx} className="group relative rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300">
                   <div className="w-full aspect-[3/4] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
@@ -174,7 +171,7 @@ export default function ImageDropZone({
                       <div className="truncate text-xs font-medium mr-2">{image.fileName ?? `Image ${idx + 1}`}</div>
                       <button
                         onClick={() => handleDelete(image)}
-                        className="flex-shrink-0 inline-flex items-center justify-center p-1.5 rounded-lg bg-red-500/80 hover:bg-red-500 transition-colors"
+                        className="flex-shrink-0 inline-flex items-center justify-center p-1.5 rounded-lg bg-red-400 dark:bg-red-500/80 hover:bg-red-500 transition-colors"
                         type="button"
                         aria-label="Delete image"
                       >
@@ -185,7 +182,7 @@ export default function ImageDropZone({
                     </div>
                   </div>
 
-                  <div className="absolute top-2 left-2 bg-gradient-to-br from-red-500 to-pink-500 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-lg">
+                  <div className="absolute top-2 left-2 bg-red-400 dark:bg-red-500/80 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-lg">
                     #{idx + 1}
                   </div>
                 </div>

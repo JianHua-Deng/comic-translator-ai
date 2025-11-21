@@ -15,14 +15,14 @@ export default function TranslatorSelector({ value, onChange }: TranslatorSelect
           onClick={() => onChange('gemini')}
           className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
             value === 'gemini'
-              ? 'border-red-500 bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 shadow-md'
+              ? 'border-red-400 dark:border-red-500 bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 shadow-md'
               : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-500'
           }`}
         >
           <div className="flex items-center gap-3">
             <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
               value === 'gemini'
-                ? 'bg-gradient-to-br from-red-500 to-pink-500'
+                ? 'bg-red-400 dark:bg-red-500/80'
                 : 'bg-gray-100 dark:bg-gray-700'
             }`}>
               <svg className={`w-6 h-6 ${value === 'gemini' ? 'text-white' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,10 +31,10 @@ export default function TranslatorSelector({ value, onChange }: TranslatorSelect
             </div>
             <div className="flex-1 text-left">
               <div className={`font-semibold ${value === 'gemini' ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                Gemini AI
+                Gemini Flash
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                Advanced AI translation
+                LLM translation
               </div>
             </div>
             {value === 'gemini' && (
@@ -69,7 +69,7 @@ export default function TranslatorSelector({ value, onChange }: TranslatorSelect
                 Google Translate
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                Fast & reliable
+                Relatively faster but unstable
               </div>
             </div>
             {value === 'google' && (

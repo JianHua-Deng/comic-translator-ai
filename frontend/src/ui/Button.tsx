@@ -27,7 +27,7 @@ export default function Button({
     md: "px-6 py-2.5 text-base h-11",
   };
   const variants: Record<string, string> = {
-    primary: "bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600 hover:shadow-lg hover:scale-105 focus:ring-red-500",
+    primary: "bg-red-400 dark:bg-red-500/80 text-white hover:from-red-600 hover:to-pink-600 hover:shadow-lg hover:scale-105 focus:ring-red-500",
     secondary: "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 focus:ring-gray-500",
     ghost: "bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:ring-gray-500",
   };
