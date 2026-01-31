@@ -149,7 +149,7 @@ class TextTranslator:
             return translations
 
         except Exception as e:
-            print(f"[DeepSeek] Batch failed ({e}). Switching to individual...", flush=True)
+            print(f"[DeepSeek] Batch failed ({e})", flush=True)
 
 
 
