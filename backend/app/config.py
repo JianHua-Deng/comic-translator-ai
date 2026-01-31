@@ -6,9 +6,15 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(APP_ROOT)
 INPUT_DIR = os.path.join(PROJECT_ROOT, 'input')
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, 'output')
-FONT_PATH = os.path.join(APP_ROOT, 'assets', 'fonts', 'NotoSans-Regular.ttf')
+FONT_PATH = os.path.join(APP_ROOT, 'assets', 'fonts', 'DejaVuSans.ttf')
 
 DETECTOR_MODEL_ID = "ogkalu/comic-text-and-bubble-detector"
+INPAINTER_MODEL = "https://github.com/Sanster/models/releases/download/AnimeMangaInpainting/anime-manga-big-lama.pt"
+CACHED_MODEL_DIR = os.path.join(PROJECT_ROOT, 'cached_models')
+CACHED_INPAINTER_MODEL = "anime-manga-big-lama.pt"
+CACHED_INPAINTER_MODEL_PATH = os.path.join(CACHED_MODEL_DIR, CACHED_INPAINTER_MODEL)
+
+print(f'{CACHED_INPAINTER_MODEL_PATH}')
 
 
 if torch.cuda.is_available():
