@@ -8,7 +8,7 @@ from app.processing.bubble_detection import BubbleDetector
 from app.processing.ocr import OcrProcessor
 from app.processing.inpainting import InPainter
 from app.processing.translation import TextTranslator
-from app.utils.box_calculations import group_by_iou, shrink_box
+from app.utils.box_calculations import group_by_iou, shrink_box, enlarge_box
 from app.utils.render_box import draw_text_in_box
 
 print("[Pipeline Imports] All imports successful.")
@@ -16,11 +16,11 @@ print("[Pipeline Imports] All imports successful.")
 
 
 class MangaTranslationPipeline:
-    def __init__(self, translator_option='gemini'):
+    def __init__(self, translator_option='google'):
 
         self.detector = BubbleDetector()
         self.ocr = OcrProcessor()
-        self.translator = TextTranslator(translator_option)
+        self.translator = TextTranslator()
         self.inpainter = InPainter()
         self.bubble_map = {0: "bubble", 1: "text_bubble", 2: "text_free"}
     
@@ -84,7 +84,7 @@ class MangaTranslationPipeline:
         # First structure the raw result we got
         for image_index, (image, single_image_results) in enumerate(zip(image_list, all_raw_results)):
             detections = {}
-
+            max_width, max_height = image.size
             for box_index, (score, label, coord) in enumerate(zip(single_image_results['scores'], single_image_results['labels'], single_image_results['boxes'])):
                 label_value = int(label.item())
                 detections[box_index] = {
@@ -103,7 +103,7 @@ class MangaTranslationPipeline:
                     continue
             
                 bubble_coords = data['bubble']
-                text_bubble_coords = data.get('text_bubble', shrink_box(bubble_coords)) # Either get the text bubble coords, or if doesn't exist, use the shrink version of bubble coords
+                text_bubble_coords = data.get('text_bubble', shrink_box(bubble_coords, max_width=max_width, max_height=max_height)) # Either get the text bubble coords, or if doesn't exist, use the shrink version of bubble coords
                 #text_bubble_coords = adjust_box_height(text_bubble_coords, bubble_coords) # Adjust and increase the height of the box if it is too small (For example, a single Jap word translating to english will make it appear small after rerender)
 
                 if bubble_coords and len(bubble_coords) == 4:
@@ -125,14 +125,14 @@ class MangaTranslationPipeline:
         return text_and_coords
     
     
-    async def translate_all_texts(self, all_text_data):
+    async def translate_all_texts(self, all_text_data, translator_option: str):
         # Collect all text into a single list for batch translation
         original_texts = []
         for img_data in all_text_data.values():
             for bubble in img_data.values():
                 original_texts.append(bubble['original_text'])
 
-        translated_texts = await self.translator.translate_batch(original_texts)
+        translated_texts = await self.translator.translate_batch(original_texts, translator_option=translator_option)
 
         translated_iter = iter(translated_texts)
 
@@ -142,85 +142,72 @@ class MangaTranslationPipeline:
 
         return all_text_data
     
+    # Erase the original text by filling it with white color
+    def erase_by_filling(self, text_and_coords, image_list):
+        erased_images = []
+        for image_index, image in enumerate(image_list):
+            orig_img = image.copy()
+            draw = ImageDraw.Draw(orig_img)
 
-    def inpaint_images(self, all_translated_data, image_list, max_dim: int = 896, pad_stride: int = 8):
-        """
-        Rescale: adding strade padding -> inpaint -> crop -> rescale. max_dim should be 768 or 1024 for best result, the higher the better the quality, but loses performance speed
-        - dilate_px: expand mask by this many pixels (helps blending).
-        - feather_radius: Gaussian blur radius for final soft mask (in pixels).
-        - pad_stride: pad small image to multiples of this stride (many LaMa variants like powers of 8).
-        """
+            if image_index in text_and_coords:
+                for bubble in text_and_coords[image_index]:
+                    box_to_fill = bubble.get('text_bubble_coordinates')
+                    if box_to_fill:
+                        draw.rectangle(box_to_fill, fill='white')
+
+            erased_images.append(orig_img)
+        
+        return erased_images
+    
+
+    def inpaint_images(self, text_and_coords, image_list):
+
+        stride = 8
+
         inpainted_images = []
-
         for image_index, image in enumerate(image_list):
             width, height = image.size
-
-            # Build binary mask 'L' (white=mask)
-            mask = Image.new('L', (width, height), 0)
+            mask = Image.new('L', (width, height), 0) # L for grayscale
             draw = ImageDraw.Draw(mask)
-            if image_index in all_translated_data:
-                for bubble in all_translated_data[image_index].values():
-                    coords_to_inpaint = bubble.get('text_bubble_coordinates') or bubble.get('bubble_coordinates')
+
+            if image_index in text_and_coords:
+                for bubble in text_and_coords[image_index].values():
+                    coords_to_inpaint = bubble.get('text_bubble_coordinates')
                     if coords_to_inpaint:
-                        draw.rectangle(coords_to_inpaint, fill=255)
+                        #coords_to_inpaint = enlarge_box(coords_to_inpaint, width, height) # Enlarge the mask by a bit so that it has higher probability of not leaving any marks
+                        draw.rectangle(coords_to_inpaint, fill='white')
 
+            # Pad to Stride required for LaMa model since the dimension needs to be divisible by 8
+            new_w = math.ceil(width/stride) * stride
+            new_h = math.ceil(height/stride) * stride
 
-            # Downscale decision
-            long_side = max(width, height)
-            if long_side > max_dim:
-                scale = max_dim / float(long_side)
-                new_w = max(1, int(round(width * scale)))
-                new_h = max(1, int(round(height * scale)))
-                img_small = image.resize((new_w, new_h), Image.LANCZOS)
-                # For inpaint we want hard mask (nearest)
-                mask_small = mask.resize((new_w, new_h), Image.NEAREST)
+            pad_w = new_w - width
+            pad_h = new_h - height
+
+            if pad_w > 0 or pad_h > 0:
+
+                # Pad image with gray
+                img_padded = Image.new(image.mode, (new_w, new_h), (128, 128, 128))
+                img_padded.paste(image, (0, 0))
+
+                # Pad mask with black
+                mask_padded = Image.new(mask.mode, (new_w, new_h), 0)
+                mask_padded.paste(mask, (0, 0))
+
             else:
-                scale = 1.0
-                img_small = image.copy()
-                mask_small = mask.copy()
+                img_padded = image
+                mask_padded = mask
+            
+            cleaned_image = self.inpainter.inpaint(img_padded, mask_padded)
 
-            # Adds extra pixels (padding) so the image dimensions become multiples of the variable "stride", such so the model avoids edge artifacts
-            def pad_to_stride(pil_img, stride, fill=0):
-                w, h = pil_img.size
-                new_w = math.ceil(w / stride) * stride
-                new_h = math.ceil(h / stride) * stride
-                if new_w == w and new_h == h:
-                    return pil_img, (0, 0)
-                canvas = Image.new(pil_img.mode, (new_w, new_h), fill)
-                canvas.paste(pil_img, (0, 0))
-                return canvas, (new_w - w, new_h - h)
-
-            img_padded, pad_amount = pad_to_stride(img_small, pad_stride, fill=(128,128,128) if img_small.mode=='RGB' else 0)
-            mask_padded, _ = pad_to_stride(mask_small, pad_stride, fill=0)
-
-            inpainted_padded = self.inpainter.inpaint(img_padded, mask_padded)
-
-            # Convert numpy -> PIL if needed
-            if not isinstance(inpainted_padded, Image.Image):
-                inpainted_padded = Image.fromarray(inpainted_padded)
-
-            # Remove padding if present (crop back to original small size)
-            pad_right, pad_bottom = pad_amount
-            if pad_right > 0 or pad_bottom > 0:
-                wpad, hpad = img_padded.size
-                crop_w = wpad - pad_right
-                crop_h = hpad - pad_bottom
-                inpainted_small = inpainted_padded.crop((0, 0, crop_w, crop_h))
+            if pad_w > 0 or pad_h > 0:
+                final_image = cleaned_image.crop((0, 0, width, height))
             else:
-                inpainted_small = inpainted_padded
+                final_image = cleaned_image
 
-            # Upscale back to original size
-            if scale != 1.0:
-                inpainted_up = inpainted_small.resize((width, height), Image.BICUBIC)
-            else:
-                inpainted_up = inpainted_small
-
-
-            # Composite using soft mask (PIL composite uses mask values 0..255 to blend)
-            final = Image.composite(inpainted_up, image, mask)
-
-            inpainted_images.append(final)
-
+            final_image.save(os.path.join(config.OUTPUT_DIR, f'{image_index}_debug_inpainted.png'))
+            inpainted_images.append(final_image)
+        
         return inpainted_images
 
 
@@ -251,10 +238,6 @@ class MangaTranslationPipeline:
         - all_translated_data: mapping image_index -> {bubble_index: {...}}
         - saves images to config.OUTPUT_DIR named {save_prefix}_img_{i}.png
         """
-        from PIL import ImageDraw
-        import os
-        # use your existing draw_text_in_box (must be importable)
-        from app.utils.render_box import draw_text_in_box
 
         os.makedirs(config.OUTPUT_DIR, exist_ok=True)
 

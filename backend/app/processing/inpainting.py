@@ -1,33 +1,65 @@
-from simple_lama_inpainting import SimpleLama
-from app import config
+print("[InPainter] importing transformers/torch - this can take a while", flush=True)
+import os
 import torch
-import contextlib
+import numpy as np
+from PIL import Image
+from app import config
+from app.utils.utils import download_models
+print("[InPainter] transformers/torch imported", flush=True)
 
-_orig_jit_load = torch.jit.load
-
-# This function is to avoid the error of not being able to run with CPU
-def _jit_load_force_cpu(f, *args, **kwargs):
-    # prefer explicit map_location to CPU; if caller already passed map_location, keep it
-    if 'map_location' not in kwargs and len(args) == 0:
-        return _orig_jit_load(f, map_location=torch.device('cpu'))
-    # if they passed e.g. a map_location in args, let original handle it (rare)
-    return _orig_jit_load(f, *args, **kwargs)
-
-torch.jit.load = _jit_load_force_cpu
 
 class InPainter:
-    def __init__(self, device=config.DEVICE):
-        self.lama = SimpleLama(device=device)
+    def __init__(self):
+        self.model = self.load_model()
 
-    def inpaint(self, image, mask):
-        # Accoroding to github issue, Simple-Lama-Cleaner will have slow inference during the first few inference
-        # So we have to do torch.jit.optimized_execution(False)
-        # safe fallback if optimized_execution isn't available
+    
+    def load_model(self):
+        if not os.path.exists(config.CACHED_INPAINTER_MODEL_PATH):
+            download_models(config.INPAINTER_MODEL, config.CACHED_INPAINTER_MODEL_PATH)
+        
+        print("Trying to load the Inpainter Model")
         try:
-            opt_ctx = torch.jit.optimized_execution(False)
-        except Exception:
-            opt_ctx = contextlib.nullcontext()
+            model = torch.jit.load(config.CACHED_INPAINTER_MODEL_PATH, map_location=config.DEVICE)
+            model.eval()
+            model.to(config.DEVICE)
+            return model
 
+        except Exception as e:
+            print("Something went wrong while trying to load the InPainter Model")
+            raise e
+        
+    
+    def inpaint(self, image: Image.Image, mask: Image.Image) -> Image.Image:
+
+        # Convert PIL to Numpy and Normalize it to 0.0 - 1.0 values
+        img_np = np.array(image).astype('float32') / 255.0
+        mask_np = np.array(mask).astype('float') / 255.0
+
+        # Binarize mask
+        mask_np = (mask_np > 0.5).astype('float32')
+
+        # Prepare tensors
+        # Image: HWC -> CHW -> Add Batch Dimensions(size) -> move to device
+        img_tensor = torch.from_numpy(img_np).permute(2, 0, 1).unsqueeze(0).to(config.DEVICE)
+
+        # Mask: HW -> Add Batch and Channel Dimensions (1, 1, H, W) -> Move to device
+        if len(mask_np.shape) == 2:
+            mask_tensor = torch.from_numpy(mask_np).unsqueeze(0).unsqueeze(0).to(config.DEVICE)
+        else:
+            mask_tensor = torch.from_numpy(mask_np).permute(2, 0, 1).unsqueeze(0).to(config.DEVICE)
+
+
+        # Inference
         with torch.no_grad():
-            with opt_ctx:
-                return self.lama(image, mask)
+            output = self.model(img_tensor, mask_tensor)
+
+        # Post process: Tensor -> Numpy -> PIL
+        # Removing batch dimensions -> CHW ->HWC
+        res_img = output[0].permute(1, 2, 0).detach().cpu().numpy()
+
+        # Clip to 0-255 and converts to uint8
+        res_img = np.clip(res_img * 255, 0, 255).astype("uint8")
+
+        return Image.fromarray(res_img)
+            
+            

@@ -71,6 +71,7 @@ backend/output/*.gif
 # Model cache
 backend/.cache/
 backend/models/
+backend/cached_models/
 *.pth
 *.pt
 *.onnx

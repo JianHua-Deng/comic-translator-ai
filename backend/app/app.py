@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Pool
 from typing import List, Optional
@@ -29,9 +30,24 @@ if __name__ == "__main__":
     asyncio.run(main())
 
 
+pipelines = {}
 
-# Entry point for our backend services with FastAPI
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        pipeline = MangaTranslationPipeline()
+        pipelines['pipeline'] = pipeline
+        print("Startup Completed")
+    except Exception as e:
+        print("Start up failed")
+        raise e
+    
+    yield
+
+    print("Shutting down server")
+    pipelines.clear()
+    
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     'http://localhost:5173'
@@ -47,6 +63,7 @@ app.add_middleware(
 app.mount("/translated", StaticFiles(directory="output"), name="static")
 
 
+
 @app.post("/translate-images/")
 async def translate_images_in_batch(
     request: Request,
@@ -56,10 +73,12 @@ async def translate_images_in_batch(
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
 
-    print(f"Received {len(files)} image(s) with translator: {translator}")
+    if 'pipeline' not in pipelines:
+        raise HTTPException(status_code=500, detail="Server is still initializing")
 
-    # Create pipeline with selected translator
-    pipeline = MangaTranslationPipeline(translator_option=translator)
+    print(f"Received {len(files)} image(s) with translator: {translator}")
+    
+    pipeline = pipelines['pipeline']
 
     image_list = []
     original_filename = []
@@ -84,7 +103,8 @@ async def translate_images_in_batch(
         )
 
         all_translated_data = await pipeline.translate_all_texts(
-            all_text_and_coord_data
+            all_text_and_coord_data,
+            translator
         )
 
         processed_images = await loop.run_in_executor(

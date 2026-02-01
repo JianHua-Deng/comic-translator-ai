@@ -3,7 +3,7 @@ def box_area(box):
     return max(0.0, x2 - x1) * max(0.0, y2 - y1)
 
 
-def shrink_box(box, shrink_factor=0.1):
+def shrink_box(box, max_width, max_height, shrink_factor=0.1):
     if not box:
          return None
 
@@ -11,13 +11,31 @@ def shrink_box(box, shrink_factor=0.1):
     width = x2 - x1
     height = y2 - y1
 
-    shrink_x = width * shrink_factor
-    shrink_y = height * shrink_factor
+    shrink_x = int(width * shrink_factor)
+    shrink_y = int(height * shrink_factor)
 
-    new_x1 = x1 + shrink_x
-    new_y1 = y1 + shrink_y
-    new_x2 = x2 - shrink_x
-    new_y2 = y2 - shrink_y
+    new_x1 = min(max_width, x1 + shrink_x)
+    new_y1 = min(max_height, y1 + shrink_y)
+    new_x2 = max(0, x2 - shrink_x)
+    new_y2 = max(0, y2 - shrink_y)
+
+    return [new_x1, new_y1, new_x2, new_y2]
+
+def enlarge_box(box, max_width, max_height, enlarge_factor=0.1):
+    if not box:
+        return None
+     
+    x1, y1, x2, y2 = box
+    width = x2 - x1
+    height = y2 - y1
+
+    enlarge_x = int(width * enlarge_factor)
+    enlarge_y = int(height * enlarge_factor)
+
+    new_x1 = max(0, x1 - enlarge_x)
+    new_y1 = max(0, y1 - enlarge_y)
+    new_x2 = min(max_width, x2 + enlarge_x)
+    new_y2 = min(max_height, y2 + enlarge_y)
 
     return [new_x1, new_y1, new_x2, new_y2]
 
