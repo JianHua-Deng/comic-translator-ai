@@ -26,7 +26,7 @@ services:
               count: all
               capabilities: [gpu]
     volumes:
-      - ./backend/cached_models:/app/cached_models:ro
+      - ./backend/cached_models:/app/cached_models
       - ./backend/output:/app/output
       - ./backend/input:/app/input
     ports:
@@ -44,7 +44,7 @@ services:
         - USE_CUDA=false
     image: comic-backend:cpu
     volumes:
-      - ./backend/cached_models:/app/cached_models:ro
+      - ./backend/cached_models:/app/cached_models
       - ./backend/output:/app/output
       - ./backend/input:/app/input
     ports:
