@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  # --- FRONTEND (Always runs) ---
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:80"
+
+  # --- BACKEND (GPU Version) ---
+  backend-gpu:
+    profiles: ["gpu"]  # Only starts if --profile gpu is used
+    build:
+      context: ./backend
+      args:
+        - USE_CUDA=true
+    image: comic-backend:gpu
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ./backend/cached_models:/app/cached_models:ro
+      - ./backend/output:/app/output
+      - ./backend/input:/app/input
+    ports:
+      - "8000:8000"
+
+  # --- BACKEND (CPU Version) ---
+  backend-cpu:
+    profiles: ["cpu"]  # Only starts if --profile cpu is used
+    build:
+      context: ./backend
+      args:
+        - USE_CUDA=false
+    image: comic-backend:cpu
+    volumes:
+      - ./backend/cached_models:/app/cached_models:ro
+      - ./backend/output:/app/output
+      - ./backend/input:/app/input
+    ports:
+      - "8000:8000"
+
+volumes:
+  cached_models:
+  output:
+  input:

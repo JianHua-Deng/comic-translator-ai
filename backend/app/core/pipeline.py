@@ -32,6 +32,9 @@ class MangaTranslationPipeline:
         """
         # Detect all the text bubbles and corresponding coordinates from the images
         all_raw_results = self.detector.detect(image_list)
+
+        print(f"DEBUG: Raw Detection Results: {all_raw_results}", flush=True)
+
         # Structure, group and get the original text from the images
         all_text_and_coord_data = self.get_text_data_from_detections(all_raw_results, image_list)
 

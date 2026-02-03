@@ -33,3 +33,8 @@ To get a local copy up and running, you will need to set up both the frontend an
 2.  **Set up the Backend:** Navigate to the `/backend` directory and follow the instructions in its `README.md` file.
 3.  **Set up the Frontend:** Navigate to the `/frontend` directory and follow the instructions in its `README.md` file.
 
+## To Get it Running with Docker
+
+1. **Clone the repository**
+2. If you have a CUDA gpu and want to run it with GPU run, you can do: `docker-compose --profile gpu up --build`
+3. CPU: `docker-compose --profile cpu up --build`
