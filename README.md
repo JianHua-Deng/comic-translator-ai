@@ -36,7 +36,7 @@ To get a local copy up and running, you will need to set up both the frontend an
 ## To Get it Running with Docker
 
 1. **Clone the repository**
-2. Remeber to create a `.env` file within the root level of the directory. And then enter your API Keys: `DEEPSEEK_API_KEY=[Your api Key]` and `GEMINI_API_KEY=[Your api Key]`
+2. If Deepseek or Gemini service are needed, remeber to create a `.env` file within the root level of the directory. And then enter your API Keys: `DEEPSEEK_API_KEY=[Your api Key]` and `GEMINI_API_KEY=[Your api Key]`
 3. If you have a CUDA gpu and want to run it with GPU, you can do: `docker-compose --profile gpu up --build`
 4. Or, to run with CPU: `docker-compose --profile cpu up --build`
 5. Then navigate to `http://localhost:5173/` to use it
