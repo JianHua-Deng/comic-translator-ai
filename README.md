@@ -20,6 +20,11 @@ This repository is a monorepo that contains both the frontend and backend servic
 
 ---
 
+## Simple Demo
+
+https://github.com/user-attachments/assets/beea569d-1a11-4b81-8181-660ac6479f96
+
+
 ## Getting Started
 
 To get a local copy up and running, you will need to set up both the frontend and backend services.
