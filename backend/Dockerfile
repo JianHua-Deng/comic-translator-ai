@@ -1,52 +1,55 @@
-# syntax=docker/dockerfile:1
+# Start with a clean, official Python 3.11 image
+FROM python:3.11-slim
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
-
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
-
-ARG PYTHON_VERSION=3.13.2
-FROM python:${PYTHON_VERSION} as base
-
-# Prevents Python from writing pyc files.
-ENV PYTHONDONTWRITEBYTECODE=1
-
-# Keeps Python from buffering stdout and stderr to avoid situations where
-# the application crashes without emitting any logs due to buffering.
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-# Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/go/dockerfile-user-best-practices/
-ARG UID=10001
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    appuser
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    curl \
+    ca-certificates \
+    libgl1 \
+    libglib2.0-0 \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
-# Leverage a bind mount to requirements.txt to avoid having to copy them into
-# into this layer.
-RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements.txt,target=requirements.txt \
-    python -m pip install -r requirements.txt && \
-    python -m pip install --upgrade --force-reinstall torch torchvision --index-url https://download.pytorch.org/whl/cu129
 
-# Switch to the non-privileged user to run the application.
+# Define a build argument with a default value of "true"
+ARG USE_CUDA=true
+
+# Conditional installation logic
+# If USE_CUDA is true, install from the CUDA 12.6 wheel (GPU) (You might need to modify the the torch version link below based on your GPU)
+# If USE_CUDA is false, install from the CPU wheel (Smaller image size)
+RUN if [ "$USE_CUDA" = "true" ]; then \
+        echo "Building with CUDA Support (GPU)..." && \
+        pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128; \
+    else \
+        echo "Building with CPU Support Only..." && \
+        pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu; \
+    fi
+# --- CONFIGURATION END ---
+
+# Copy requirements file
+COPY requirements.txt /app/requirements.txt
+
+# Install remaining dependencies
+# (Ensure torch/torchvision are commented out in requirements.txt)
+RUN pip install -r /app/requirements.txt
+
+# Copy application code
+COPY . /app
+
+# Create non-root user
+RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Copy the source code into the container.
-COPY . .
-
-# Expose the port that the application listens on.
+ENV PORT=8000
 EXPOSE 8000
 
-# Run the application.
-CMD ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run uvicorn
+CMD ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
