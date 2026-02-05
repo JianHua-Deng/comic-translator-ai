@@ -3,7 +3,7 @@
 ## To run it locally
 
 1. Install dependencies with the command: `npm i`
-2. Run the frontend with the command: `npm run dev
+2. Run the frontend with the command: `npm run dev`
 
 ---
 
