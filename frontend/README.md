@@ -1,5 +1,12 @@
 # React + TypeScript + Vite
 
+## To run it locally
+
+1. Install dependencies with the command: `npm i`
+2. Run the frontend with the command: `npm run dev`
+
+---
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
