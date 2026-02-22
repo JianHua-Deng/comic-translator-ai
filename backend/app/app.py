@@ -62,6 +62,10 @@ app.add_middleware(
 
 app.mount("/translated", StaticFiles(directory="output"), name="static")
 
+@app.get("/health")
+async def check_health(request: Request):
+    print(f"Checked Health")
+    return {"status": "ok"}
 
 
 @app.post("/translate-images/")
