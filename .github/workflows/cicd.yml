@@ -1,0 +1,114 @@
+name: ComicTranslate CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 1. Start only the CPU profile for testing on GitHub's standard runners
+      - name: Build and start containers (CPU Profile)
+        run: docker compose --profile cpu up -d --build
+
+      - name: Verify containers are running
+        run: docker ps
+
+      # 2. Target the 'backend-cpu' service for your tests
+      - name: Run Backend Tests
+        run: docker compose exec -T backend-cpu pytest 
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down
+
+
+  push-images:
+    needs: build-and-test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 3. Build and push the CPU image, passing the build-arg
+      - name: Build and push Backend (CPU)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          build-args: |
+            USE_CUDA=false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:cpu
+
+      # 4. Build and push the GPU image, passing the build-arg
+      - name: Build and push Backend (GPU)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          build-args: |
+            USE_CUDA=true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:gpu
+
+      # 5. Build and push the Frontend image
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
