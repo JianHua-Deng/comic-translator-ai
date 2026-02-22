@@ -39,6 +39,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create volume directories and set permissions for downloading inpainter models and write access of input/output folder
+        run: |
+            mkdir -p ./backend/cached_models ./backend/output ./backend/input
+            chmod -R 777 ./backend/cached_models ./backend/output ./backend/input
+
       # 1. Start only the CPU profile for testing on GitHub's standard runners
       - name: Build and start containers (CPU Profile)
         run: docker compose --profile cpu up -d --build
