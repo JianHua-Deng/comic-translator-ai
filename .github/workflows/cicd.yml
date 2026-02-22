@@ -50,6 +50,10 @@ jobs:
       - name: Run Backend Health Check
         run: docker compose exec -T backend-cpu curl -f --retry 20 --retry-delay 10 --retry-connrefused http://localhost:8000/ || exit 1
 
+      - name: Dump Docker Logs on Failure
+        if: failure()
+        run: docker compose logs backend-cpu
+
       - name: Stop containers
         if: always()
         run: docker compose down
