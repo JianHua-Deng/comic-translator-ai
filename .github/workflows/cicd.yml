@@ -48,7 +48,7 @@ jobs:
 
       # 2. Target the 'backend-cpu' service for your tests
       - name: Run Backend Health Check
-        run: docker compose exec -T backend-cpu curl -f http://localhost:8000/ || exit 1
+        run: docker compose exec -T backend-cpu curl -f --retry 20 --retry-delay 10 http://localhost:8000/ || exit 1
 
       - name: Stop containers
         if: always()
